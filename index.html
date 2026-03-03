@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>spinning text ring · ultimate control</title>
+    <title>spinning text ring · green screen + hex inputs</title>
     <style>
         * {
             margin: 0;
@@ -21,9 +21,9 @@
             transition: background 0.2s;
         }
 
-        /* ---------- FOCUS MODE – clean & transparent ---------- */
+        /* ---------- FOCUS MODE – green screen background ---------- */
         body.focus-mode {
-            background: transparent !important;
+            background: #00ff00 !important;  /* pure green for chroma key */
             padding: 0 !important;
         }
         body.focus-mode .app {
@@ -67,7 +67,6 @@
             transition: all 0.25s ease;
         }
 
-        /* two‑column layout */
         .dashboard {
             display: flex;
             gap: 2rem;
@@ -75,7 +74,7 @@
             justify-content: center;
         }
 
-        /* ---------- CONTROL PANEL – scrollable & compact ---------- */
+        /* ---------- CONTROL PANEL – scrollable ---------- */
         .control-panel {
             flex: 1 1 340px;
             background: rgba(24, 24, 40, 0.7);
@@ -110,7 +109,6 @@
             padding-bottom: 0.5rem;
         }
 
-        /* text input */
         input[type="text"] {
             width: 100%;
             background: #262439;
@@ -133,14 +131,15 @@
             gap: 0.9rem;
         }
 
-        /* color pickers row */
+        /* color picker + hex input row */
         .color-row {
             display: flex;
             gap: 0.8rem;
             flex-wrap: wrap;
+            align-items: flex-end;
         }
         .color-item {
-            flex: 1 1 150px;
+            flex: 1 1 130px;
             display: flex;
             flex-direction: column;
             gap: 0.2rem;
@@ -159,8 +158,20 @@
             padding: 0.1rem;
             cursor: pointer;
         }
+        .hex-input {
+            flex: 1 1 100px;
+        }
+        .hex-input input {
+            width: 100%;
+            background: #262439;
+            border: 1px solid #4f4b70;
+            border-radius: 2rem;
+            padding: 0.5rem 0.8rem;
+            color: white;
+            font-size: 0.9rem;
+            font-family: monospace;
+        }
 
-        /* outline toggle */
         .checkbox-row {
             display: flex;
             align-items: center;
@@ -175,7 +186,6 @@
             cursor: pointer;
         }
 
-        /* font dropdown */
         .select-group {
             display: flex;
             flex-direction: column;
@@ -201,7 +211,6 @@
             cursor: pointer;
         }
 
-        /* sliders */
         .slider-group {
             display: flex;
             flex-direction: column;
@@ -232,7 +241,6 @@
             color: #8f8ab0;
         }
 
-        /* focus hint */
         .focus-hint {
             margin-top: 0.8rem;
             color: #7f79a2;
@@ -248,7 +256,6 @@
             border: 1px solid #736d9a;
         }
 
-        /* ---------- RING WRAPPER ---------- */
         .ring-wrapper {
             flex: 1 1 460px;
             min-width: 340px;
@@ -274,7 +281,6 @@
             transform-origin: center center;
             will-change: transform;
         }
-
         .footer-note {
             margin-top: 1rem;
             color: #8f8ab0;
@@ -286,20 +292,33 @@
 <body>
 <div class="app" id="app">
     <div class="dashboard">
-        <!-- CONTROL PANEL (scrollable) -->
+        <!-- CONTROL PANEL -->
         <div class="control-panel">
             <h3>⭕ spinning text ring</h3>
-            <input type="text" id="textInput" value="The quick brown fox jumps over the lazy dog" placeholder="your text...">
+            <input type="text" id="textInput" placeholder="your text...">
 
             <div class="control-grid">
+                <!-- Text color with picker + hex -->
                 <div class="color-row">
                     <div class="color-item">
                         <label>text color</label>
-                        <input type="color" id="textColor" value="#ffffff">
+                        <input type="color" id="textColorPicker" value="#ffffff">
                     </div>
+                    <div class="hex-input">
+                        <label>&nbsp;</label>
+                        <input type="text" id="textColorHex" value="#ffffff" placeholder="#rrggbb">
+                    </div>
+                </div>
+
+                <!-- Outline color with picker + hex -->
+                <div class="color-row">
                     <div class="color-item">
                         <label>outline color</label>
-                        <input type="color" id="outlineColor" value="#aa7eec">
+                        <input type="color" id="outlineColorPicker" value="#aa7eec">
+                    </div>
+                    <div class="hex-input">
+                        <label>&nbsp;</label>
+                        <input type="text" id="outlineColorHex" value="#aa7eec" placeholder="#rrggbb">
                     </div>
                 </div>
 
@@ -352,30 +371,28 @@
                 </div>
             </div>
             <div class="focus-hint">
-                <span><kbd>N</kbd> focus mode (transparent)</span>
+                <span><kbd>N</kbd> green screen focus</span>
                 <span><kbd>ESC</kbd> exit</span>
+                <span>🔗 use ?text=... in URL</span>
             </div>
         </div>
 
-        <!-- RING (right side) -->
+        <!-- RING -->
         <div class="ring-wrapper">
             <div class="ring-container">
                 <svg viewBox="0 0 800 800" preserveAspectRatio="xMidYMid meet" id="spinningSvg">
-                    <!-- circle path (will be updated by JS) -->
                     <path id="circlePath" d="M 400,400 m -250,0 a 250,250 0 1,1 500,0 a 250,250 0 1,1 -500,0" fill="none" stroke="none" />
-                    <!-- outline text (stroke) – placed first so it appears behind main text -->
                     <text id="outlineText" fill="none" stroke="#aa7eec" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" font-family="'Courier New', monospace" font-size="36" font-weight="bold" text-anchor="middle">
-                        <textPath href="#circlePath" startOffset="50%">The quick brown fox jumps over the lazy dog</textPath>
+                        <textPath href="#circlePath" startOffset="50%"></textPath>
                     </text>
-                    <!-- main text (fill) -->
                     <text id="mainText" fill="#ffffff" font-family="'Courier New', monospace" font-size="36" font-weight="bold" text-anchor="middle">
-                        <textPath href="#circlePath" startOffset="50%">The quick brown fox jumps over the lazy dog</textPath>
+                        <textPath href="#circlePath" startOffset="50%"></textPath>
                     </text>
                 </svg>
             </div>
         </div>
     </div>
-    <div class="footer-note">adjust everything · N toggles clean transparent overlay</div>
+    <div class="footer-note">hex inputs work in OBS · N for green screen</div>
 </div>
 
 <script>
@@ -386,9 +403,13 @@
         const textPathOutline = document.querySelector('#outlineText textPath');
         const mainText = document.getElementById('mainText');
         const outlineText = document.getElementById('outlineText');
-        const textColorPicker = document.getElementById('textColor');
-        const outlineColorPicker = document.getElementById('outlineColor');
+
+        const textColorPicker = document.getElementById('textColorPicker');
+        const textColorHex = document.getElementById('textColorHex');
+        const outlineColorPicker = document.getElementById('outlineColorPicker');
+        const outlineColorHex = document.getElementById('outlineColorHex');
         const outlineToggle = document.getElementById('outlineToggle');
+
         const fontSelect = document.getElementById('fontSelect');
         const circlePath = document.getElementById('circlePath');
         const svg = document.getElementById('spinningSvg');
@@ -400,31 +421,65 @@
         const speedSlider = document.getElementById('speedSlider');
         const speedDisplay = document.getElementById('speedDisplay');
 
-        // ----- state for rotation -----
+        // ----- state -----
         let angle = 0;
         let lastTimestamp = null;
         let currentSpeed = 1.0;
 
-        // ----- helper: update circle path (center at 400,400) -----
+        // ----- helper: update circle path -----
         function updatePath(radius) {
             const cx = 400, cy = 400;
             const d = `M ${cx},${cy} m -${radius},0 a ${radius},${radius} 0 1,1 ${2*radius},0 a ${radius},${radius} 0 1,1 -${2*radius},0`;
             circlePath.setAttribute('d', d);
         }
 
-        // ----- update text content (both layers) -----
+        // ----- sync picker <-> hex -----
+        function syncTextColorFromPicker() {
+            const col = textColorPicker.value;
+            textColorHex.value = col;
+            mainText.setAttribute('fill', col);
+        }
+        function syncTextColorFromHex() {
+            let val = textColorHex.value.trim();
+            // basic validation – if it looks like a hex color, use it
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                textColorPicker.value = val;
+                mainText.setAttribute('fill', val);
+            } else {
+                // fallback to white if invalid
+                mainText.setAttribute('fill', '#ffffff');
+            }
+        }
+        function syncOutlineColorFromPicker() {
+            const col = outlineColorPicker.value;
+            outlineColorHex.value = col;
+            if (outlineToggle.checked) {
+                outlineText.setAttribute('stroke', col);
+            }
+        }
+        function syncOutlineColorFromHex() {
+            let val = outlineColorHex.value.trim();
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                outlineColorPicker.value = val;
+                if (outlineToggle.checked) {
+                    outlineText.setAttribute('stroke', val);
+                }
+            } else {
+                if (outlineToggle.checked) {
+                    outlineText.setAttribute('stroke', '#aa7eec');
+                }
+            }
+        }
+
+        // ----- update text content -----
         function updateText() {
             let newText = textInput.value;
-            if (newText.trim() === '') newText = ' '; // non‑breaking space to keep path active
+            if (newText.trim() === '') newText = ' ';
             textPathMain.textContent = newText;
             textPathOutline.textContent = newText;
         }
 
-        // ----- update colors -----
-        function updateTextColor() {
-            mainText.setAttribute('fill', textColorPicker.value);
-        }
-
+        // ----- outline toggle -----
         function updateOutline() {
             if (outlineToggle.checked) {
                 outlineText.setAttribute('stroke', outlineColorPicker.value);
@@ -433,7 +488,7 @@
             }
         }
 
-        // ----- font family -----
+        // ----- font -----
         function updateFont() {
             const font = fontSelect.value;
             mainText.setAttribute('font-family', font);
@@ -455,36 +510,100 @@
             updatePath(radius);
         }
 
-        // ----- speed & direction -----
+        // ----- speed -----
         function updateSpeed() {
             currentSpeed = parseFloat(speedSlider.value);
             speedDisplay.textContent = currentSpeed.toFixed(1);
         }
 
-        // ----- attach event listeners -----
+        // ----- read URL parameters -----
+        function applyURLParams() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('text')) {
+                textInput.value = params.get('text');
+            }
+            if (params.has('textColor')) {
+                let col = '#' + params.get('textColor').replace(/^#/, '');
+                if (/^#[0-9A-Fa-f]{6}$/.test(col)) {
+                    textColorPicker.value = col;
+                    textColorHex.value = col;
+                }
+            }
+            if (params.has('outlineColor')) {
+                let col = '#' + params.get('outlineColor').replace(/^#/, '');
+                if (/^#[0-9A-Fa-f]{6}$/.test(col)) {
+                    outlineColorPicker.value = col;
+                    outlineColorHex.value = col;
+                }
+            }
+            if (params.has('outline')) {
+                outlineToggle.checked = params.get('outline') !== 'false';
+            }
+            if (params.has('font')) {
+                const fontMap = {
+                    'courier': "'Courier New', monospace",
+                    'arial': "Arial, sans-serif",
+                    'times': "'Times New Roman', serif",
+                    'georgia': "Georgia, serif",
+                    'verdana': "Verdana, sans-serif",
+                    'comic': "'Comic Sans MS', cursive, sans-serif",
+                    'impact': "Impact, sans-serif",
+                    'trebuchet': "'Trebuchet MS', sans-serif",
+                    'arialblack': "'Arial Black', sans-serif",
+                    'segoe': "'Segoe UI', sans-serif"
+                };
+                let fontKey = params.get('font').toLowerCase();
+                if (fontMap[fontKey]) {
+                    fontSelect.value = fontMap[fontKey];
+                }
+            }
+            if (params.has('radius')) {
+                let r = parseInt(params.get('radius'), 10);
+                if (!isNaN(r) && r >= 100 && r <= 350) {
+                    radiusSlider.value = r;
+                }
+            }
+            if (params.has('size')) {
+                let s = parseInt(params.get('size'), 10);
+                if (!isNaN(s) && s >= 12 && s <= 100) {
+                    fontSizeSlider.value = s;
+                }
+            }
+            if (params.has('speed')) {
+                let sp = parseFloat(params.get('speed'));
+                if (!isNaN(sp) && sp >= -3 && sp <= 3) {
+                    speedSlider.value = sp;
+                }
+            }
+        }
+
+        // ----- event listeners -----
         textInput.addEventListener('input', updateText);
-        textColorPicker.addEventListener('input', updateTextColor);
-        outlineColorPicker.addEventListener('input', updateOutline);
+        textColorPicker.addEventListener('input', syncTextColorFromPicker);
+        textColorHex.addEventListener('input', syncTextColorFromHex);
+        outlineColorPicker.addEventListener('input', syncOutlineColorFromPicker);
+        outlineColorHex.addEventListener('input', syncOutlineColorFromHex);
         outlineToggle.addEventListener('change', updateOutline);
         fontSelect.addEventListener('change', updateFont);
         radiusSlider.addEventListener('input', updateRadius);
         fontSizeSlider.addEventListener('input', updateFontSize);
         speedSlider.addEventListener('input', updateSpeed);
 
-        // ----- initialise everything -----
+        // ----- initialise from URL and defaults -----
+        applyURLParams();
         updateText();
-        updateTextColor();
+        syncTextColorFromPicker(); // ensures hex matches picker
+        syncOutlineColorFromPicker();
         updateOutline();
         updateFont();
         updateRadius();
         updateFontSize();
         updateSpeed();
 
-        // ----- animation loop (time‑based, smooth) -----
+        // ----- animation -----
         function rotate(timestamp) {
             if (lastTimestamp !== null) {
-                const delta = Math.min(100, timestamp - lastTimestamp); // safety cap
-                // at speed = 1, full rotation in 10s → 0.036 deg/ms
+                const delta = Math.min(100, timestamp - lastTimestamp);
                 const rotationDelta = currentSpeed * delta * 0.036;
                 angle += rotationDelta;
                 svg.style.transform = `rotate(${angle}deg)`;
@@ -494,17 +613,16 @@
         }
         requestAnimationFrame(rotate);
 
-        // ----- FOCUS MODE: N toggles, ESC exits -----
+        // ----- focus mode (green screen) -----
         function toggleFocus() {
             document.body.classList.toggle('focus-mode');
         }
         function exitFocus() {
             document.body.classList.remove('focus-mode');
         }
-
         document.addEventListener('keydown', (e) => {
             if (e.key === 'n' || e.key === 'N') {
-                e.preventDefault(); // prevent browser search
+                e.preventDefault();
                 toggleFocus();
             } else if (e.key === 'Escape') {
                 exitFocus();
