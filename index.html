@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>floating text ring · OBS greenscreen</title>
+    <title>curved text spin · transparent overlay</title>
     <style>
         * {
             box-sizing: border-box;
@@ -34,9 +34,9 @@
             transition: all 0.25s ease;
         }
 
-        /* FOCUS MODE — pure chroma green background (#00FF00) */
+        /* FOCUS MODE — completely transparent background for OBS overlay */
         .app.focus-mode {
-            background: #00ff00;  /* bright green – perfect for OBS chroma key */
+            background: transparent !important;
             backdrop-filter: none;
             box-shadow: none;
             width: 100vw;
@@ -73,7 +73,7 @@
 
         .app.focus-mode canvas {
             box-shadow: none;
-            background: #00ff00;  /* same green – seamless keying */
+            background: transparent !important;  /* ensures canvas is transparent */
             border-radius: 0;
         }
 
@@ -255,7 +255,7 @@
             display: block;
             border-radius: 50%;
             box-shadow: 0 15px 30px -8px black, 0 0 0 1px rgba(255,255,255,0.08);
-            background: transparent;  /* will be cleared, but fallback */
+            background: transparent;
             transition: box-shadow 0.2s, background 0.2s, border-radius 0.2s;
         }
 
@@ -291,12 +291,12 @@
         <!-- CONTROL PANEL -->
         <div class="control-panel" id="controlPanel">
             <h2>
-                <span>✦ text ring studio</span>
+                <span>✦ curved text spinner</span>
             </h2>
 
             <div class="control-group">
-                <label><span>📝 ring text</span></label>
-                <input type="text" id="textInput" value="✦ FLOATING RING ✦" placeholder="your message">
+                <label><span>📝 your text</span></label>
+                <input type="text" id="textInput" value="✦ CURVED AND SPINNING ✦" placeholder="message">
             </div>
 
             <div class="control-group">
@@ -336,7 +336,7 @@
             </div>
 
             <div class="control-group">
-                <label><span>⚡ rotation speed</span> <span id="speedVal">1.2</span></label>
+                <label><span>⚡ spin speed</span> <span id="speedVal">1.2</span></label>
                 <input type="range" id="speedSlider" min="-3" max="3" value="1.2" step="0.1">
                 <div style="display:flex; justify-content:space-between; font-size:0.7rem; opacity:0.6;">
                     <span>◀ reverse</span><span>stop</span><span>fast ▶</span>
@@ -349,23 +349,24 @@
             </div>
 
             <div class="button-row">
-                <button class="primary" id="focusBtn">🎬 focus (green screen)</button>
+                <button class="primary" id="focusBtn">🔮 focus (transparent)</button>
                 <button id="resetBtn">↺ reset</button>
             </div>
             <div class="focus-hint">
-                <span><kbd>ESC</kbd> exit focus</span>
-                <span>💚 pure #00FF00 background</span>
+                <span><kbd>N</kbd> toggle focus</span>
+                <span><kbd>ESC</kbd> exit</span>
+                <span>✨ transparent background</span>
             </div>
         </div>
 
-        <!-- RING CANVAS -->
+        <!-- CANVAS (curved text) -->
         <div class="ring-wrapper">
             <div class="ring-container">
                 <canvas id="ringCanvas" width="700" height="700"></canvas>
             </div>
         </div>
     </div>
-    <div class="footer-note">connected letters · continuous flow · OBS‑ready greenscreen</div>
+    <div class="footer-note">continuous curve · spin control · transparent overlay ready</div>
 </div>
 
 <script>
@@ -402,7 +403,7 @@
             angleSpan.textContent = angleSlider.value + '°';
         }
 
-        // ----- IMPROVED DRAW: connected letters along circle -----
+        // ----- draw curved text (connected, full circle) -----
         function drawRing() {
             const text = textInput.value || '⦿';
             const fontSize = parseInt(fontSizeRange.value, 10);
@@ -413,6 +414,7 @@
             const angleOffsetDeg = parseFloat(angleSlider.value);
             const angleOffsetRad = (angleOffsetDeg * Math.PI) / 180;
 
+            // Clear to transparent (always, for overlay)
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             ctx.translate(canvas.width / 2, canvas.height / 2);
@@ -437,8 +439,8 @@
                 return;
             }
 
-            const totalAngle = 2 * Math.PI;   // full circle
-            let currentAngle = -totalAngle / 2; // start at leftmost point
+            const totalAngle = 2 * Math.PI;   // full circle – text curves all around
+            let currentAngle = -totalAngle / 2; // start at leftmost point for symmetry
 
             for (let i = 0; i < chars.length; i++) {
                 const char = chars[i];
@@ -487,7 +489,7 @@
             }
             const delta = Math.min(100, time - lastTimestamp);
             const speedValue = parseFloat(speedSlider.value);
-            const rotationDelta = speedValue * delta * 0.00157; // 2pi rad per 4 sec when speed=1
+            const rotationDelta = speedValue * delta * 0.00157; // 2pi rad per ~4 sec at speed=1
             rotation += rotationDelta;
 
             lastTimestamp = time;
@@ -519,7 +521,7 @@
 
         // reset defaults
         resetBtn.addEventListener('click', () => {
-            textInput.value = '✦ FLOATING RING ✦';
+            textInput.value = '✦ CURVED AND SPINNING ✦';
             fontSizeRange.value = 42;
             fontFamilySelect.value = "Inter, 'Segoe UI', system-ui, sans-serif";
             textColorInput.value = "#f0f0ff";
@@ -531,16 +533,24 @@
             drawRing();
         });
 
-        // FOCUS MODE (green screen with #00FF00)
-        function enterFocusMode() {
-            app.classList.add('focus-mode');
+        // FOCUS MODE — transparent overlay
+        function toggleFocus() {
+            app.classList.toggle('focus-mode');
         }
-        function exitFocusMode() {
+        function exitFocus() {
             app.classList.remove('focus-mode');
         }
-        focusBtn.addEventListener('click', enterFocusMode);
+
+        focusBtn.addEventListener('click', toggleFocus);
+
+        // Hotkeys: N toggles focus, ESC exits focus
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') exitFocusMode();
+            if (e.key === 'Escape') {
+                exitFocus();
+            } else if (e.key === 'n' || e.key === 'N') {
+                e.preventDefault();  // avoid accidental browser search
+                toggleFocus();
+            }
         });
 
         // initial draw
