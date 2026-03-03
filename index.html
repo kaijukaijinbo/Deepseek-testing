@@ -2,15 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>curved text spin · transparent overlay</title>
+    <title>spinning text ring · focus mode (N key)</title>
     <style>
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
-
         body {
             background: #1a1a2b;
             min-height: 100vh;
@@ -18,11 +16,37 @@
             justify-content: center;
             align-items: center;
             font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+            padding: 1rem;
             transition: background 0.2s;
-            margin: 0;
+        }
+        /* focus mode: transparent background + hide controls */
+        body.focus-mode {
+            background: transparent !important;
+        }
+        body.focus-mode .app {
+            background: transparent !important;
+            box-shadow: none;
+        }
+        body.focus-mode .control-panel {
+            display: none;
+        }
+        body.focus-mode .footer-note,
+        body.focus-mode .note {
+            display: none;
+        }
+        /* keep ring visible and centered */
+        body.focus-mode .ring-wrapper {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        body.focus-mode .ring-container {
+            max-width: 90vmin;
+            max-height: 90vmin;
         }
 
-        /* main app container */
         .app {
             width: 1300px;
             max-width: 95vw;
@@ -34,50 +58,6 @@
             transition: all 0.25s ease;
         }
 
-        /* FOCUS MODE — completely transparent background for OBS overlay */
-        .app.focus-mode {
-            background: transparent !important;
-            backdrop-filter: none;
-            box-shadow: none;
-            width: 100vw;
-            max-width: 100vw;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 0;
-            border-radius: 0;
-        }
-
-        .app.focus-mode .control-panel,
-        .app.focus-mode .footer-note,
-        .app.focus-mode .focus-hint {
-            display: none;
-        }
-
-        .app.focus-mode .ring-wrapper {
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .app.focus-mode .ring-container {
-            max-width: 90vmin;
-            max-height: 90vmin;
-        }
-
-        .app.focus-mode canvas {
-            box-shadow: none;
-            background: transparent !important;  /* ensures canvas is transparent */
-            border-radius: 0;
-        }
-
-        /* two‑column layout */
         .dashboard {
             display: flex;
             gap: 2rem;
@@ -85,7 +65,6 @@
             justify-content: center;
         }
 
-        /* control panel (glass card) */
         .control-panel {
             flex: 1 1 340px;
             background: rgba(24, 24, 40, 0.7);
@@ -98,7 +77,7 @@
             height: fit-content;
         }
 
-        .control-panel h2 {
+        .control-panel h3 {
             font-weight: 350;
             font-size: 1.5rem;
             letter-spacing: 1px;
@@ -110,120 +89,106 @@
             gap: 0.5rem;
         }
 
-        .control-group {
-            margin-bottom: 1.7rem;
+        input[type="text"] {
+            width: 100%;
+            background: #262439;
+            border: 1px solid #4f4b70;
+            border-radius: 3rem;
+            padding: 0.9rem 1.5rem;
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+            margin-bottom: 1.5rem;
+        }
+        input[type="text"]:focus {
+            border-color: #b48cf2;
+            box-shadow: 0 0 0 2px rgba(180,140,242,0.3);
         }
 
-        .control-group label {
+        .control-grid {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 1.2rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .color-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .color-item {
+            flex: 1 1 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            color: #dddaf0;
+        }
+        .color-item label {
             font-size: 0.9rem;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.5px;
             color: #c7c1e6;
-            margin-bottom: 0.5rem;
         }
-
-        .control-group label span:first-child {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-
-        input, select {
-            background: #211f34;
-            border: 1px solid #4f4b70;
-            border-radius: 2.5rem;
-            padding: 0.6rem 1.2rem;
-            color: white;
-            font-size: 0.95rem;
+        .color-item input[type="color"] {
             width: 100%;
-            outline: none;
-            transition: 0.15s;
-        }
-
-        input[type="range"] {
-            padding: 0;
-            background: transparent;
-            accent-color: #b48cf2;
-        }
-
-        input[type="color"] {
             height: 3rem;
+            background: #262439;
+            border: 1px solid #4f4b70;
+            border-radius: 2rem;
             padding: 0.2rem;
             cursor: pointer;
         }
 
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23b48cf2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
-            background-repeat: no-repeat;
-            background-position: right 1.2rem center;
-            background-size: 1rem;
+        .slider-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
         }
-
-        .inline-slider {
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #dddaf0;
+        }
+        .slider-label span:first-child {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
+            gap: 0.5rem;
         }
-
-        .inline-slider input {
-            flex: 1;
+        input[type="range"] {
+            width: 100%;
+            background: transparent;
+            accent-color: #b48cf2;
         }
-
-        .inline-slider output {
-            min-width: 3.5rem;
-            text-align: right;
-            background: #1b192b;
-            padding: 0.3rem 0.7rem;
-            border-radius: 3rem;
+        .value-badge {
+            background: #262439;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
             font-size: 0.9rem;
-            font-feature-settings: "tnum";
+            border: 1px solid #4f4b70;
         }
-
-        .button-row {
+        .direction-hint {
             display: flex;
-            flex-wrap: wrap;
-            gap: 0.8rem;
-            margin: 2rem 0 0.3rem;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #8f8ab0;
+            margin-top: 0.2rem;
         }
 
-        button {
-            background: #3c3657;
-            border: none;
-            border-radius: 3rem;
-            padding: 0.8rem 1.6rem;
-            font-weight: 500;
-            color: #f0ecff;
-            font-size: 0.95rem;
-            display: inline-flex;
+        .checkbox-row {
+            display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 0.6rem;
+            gap: 0.8rem;
+            color: #dddaf0;
+            margin-top: 0.5rem;
+        }
+        .checkbox-row input[type="checkbox"] {
+            width: 1.2rem;
+            height: 1.2rem;
+            accent-color: #b48cf2;
             cursor: pointer;
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.15s;
-            flex: 1 0 auto;
-            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
-        }
-
-        button:hover {
-            background: #554b7a;
-            border-color: #c3adff;
-            transform: scale(1.02);
-        }
-
-        button.primary {
-            background: #7a65c2;
-            color: white;
-            font-weight: 600;
-            box-shadow: 0 8px 18px #3d3361;
-        }
-
-        button.primary:hover {
-            background: #9882e6;
         }
 
         .ring-wrapper {
@@ -236,9 +201,8 @@
             border-radius: 2.5rem;
             padding: 1rem;
             border: 1px solid rgba(255,255,255,0.04);
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
-
         .ring-container {
             position: relative;
             width: 100%;
@@ -248,317 +212,234 @@
             justify-content: center;
             align-items: center;
         }
-
-        canvas {
+        svg {
             width: 100%;
-            height: 100%;
+            height: auto;
             display: block;
-            border-radius: 50%;
-            box-shadow: 0 15px 30px -8px black, 0 0 0 1px rgba(255,255,255,0.08);
             background: transparent;
-            transition: box-shadow 0.2s, background 0.2s, border-radius 0.2s;
+            transform-origin: center center;
+            will-change: transform;
         }
-
-        .focus-hint {
-            margin-top: 1.2rem;
+        .footer-note {
+            margin-top: 1rem;
+            color: #8f8ab0;
+            font-size: 0.9rem;
             text-align: center;
-            color: #9d96c0;
+        }
+        .focus-hint {
+            margin-top: 1rem;
+            color: #7f79a2;
             font-size: 0.8rem;
             display: flex;
             gap: 1rem;
             justify-content: center;
         }
-
         kbd {
             background: #2e2a44;
             border-radius: 0.5rem;
             padding: 0.2rem 0.8rem;
-            font-family: 'Fira Code', monospace;
+            font-family: monospace;
             border: 1px solid #736d9a;
-        }
-
-        .footer-note {
-            font-size: 0.8rem;
-            text-align: center;
-            margin-top: 2rem;
-            color: #7f79a2;
         }
     </style>
 </head>
 <body>
 <div class="app" id="app">
     <div class="dashboard">
-        <!-- CONTROL PANEL -->
-        <div class="control-panel" id="controlPanel">
-            <h2>
-                <span>✦ curved text spinner</span>
-            </h2>
+        <!-- CONTROL PANEL (left) -->
+        <div class="control-panel">
+            <h3>⭕ text ring · controls</h3>
+            <input type="text" id="textInput" value="The quick brown fox jumps over the lazy dog" placeholder="your text here...">
 
-            <div class="control-group">
-                <label><span>📝 your text</span></label>
-                <input type="text" id="textInput" value="✦ CURVED AND SPINNING ✦" placeholder="message">
-            </div>
-
-            <div class="control-group">
-                <label><span>🔠 font size</span> <span id="fontSizeVal">42</span></label>
-                <div class="inline-slider">
-                    <input type="range" id="fontSize" min="14" max="110" value="42" step="1">
+            <div class="control-grid">
+                <div class="color-row">
+                    <div class="color-item">
+                        <label>🎨 text color</label>
+                        <input type="color" id="textColor" value="#ffffff">
+                    </div>
+                    <div class="color-item">
+                        <label>✒️ outline color</label>
+                        <input type="color" id="outlineColor" value="#aa7eec">
+                    </div>
                 </div>
-            </div>
 
-            <div class="control-group">
-                <label><span>✒️ typeface</span></label>
-                <select id="fontFamily">
-                    <option value="Inter, 'Segoe UI', system-ui, sans-serif" selected>Inter (sans)</option>
-                    <option value="'Times New Roman', serif">Times New Roman</option>
-                    <option value="'Courier New', monospace">Courier New</option>
-                    <option value="'Arial Black', sans-serif">Arial Black</option>
-                    <option value="Georgia, serif">Georgia</option>
-                    <option value="'Comic Sans MS', cursive, sans-serif">Comic Sans</option>
-                    <option value="'Brush Script MT', cursive">Brush Script</option>
-                </select>
-            </div>
-
-            <div class="control-group" style="display: flex; gap: 1rem;">
-                <div style="flex:1">
-                    <label><span>🎨 color</span></label>
-                    <input type="color" id="textColor" value="#f0f0ff">
+                <div class="checkbox-row">
+                    <input type="checkbox" id="outlineToggle" checked>
+                    <label for="outlineToggle">enable outline (uncheck to disable)</label>
                 </div>
-                <div style="flex:1">
-                    <label><span>🟨 highlight</span></label>
-                    <input type="color" id="highlightColor" value="#aa7eec">
+
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>⭕ circle radius</span>
+                        <span id="radiusDisplay" class="value-badge">200</span>
+                    </div>
+                    <input type="range" id="radiusSlider" min="120" max="280" value="200" step="1">
+                    <div class="direction-hint">smaller = tighter curve · larger = wider ring</div>
                 </div>
-            </div>
 
-            <div class="control-group">
-                <label><span>🌀 opacity</span> <span id="opacityVal">1.00</span></label>
-                <input type="range" id="opacitySlider" min="0.1" max="1" step="0.01" value="1">
-            </div>
-
-            <div class="control-group">
-                <label><span>⚡ spin speed</span> <span id="speedVal">1.2</span></label>
-                <input type="range" id="speedSlider" min="-3" max="3" value="1.2" step="0.1">
-                <div style="display:flex; justify-content:space-between; font-size:0.7rem; opacity:0.6;">
-                    <span>◀ reverse</span><span>stop</span><span>fast ▶</span>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>🔠 font size</span>
+                        <span id="fontSizeDisplay" class="value-badge">30</span>
+                    </div>
+                    <input type="range" id="fontSizeSlider" min="16" max="70" value="30" step="1">
                 </div>
-            </div>
 
-            <div class="control-group">
-                <label><span>📐 angle offset</span> <span id="angleVal">0°</span></label>
-                <input type="range" id="angleSlider" min="0" max="360" value="0" step="1">
-            </div>
-
-            <div class="button-row">
-                <button class="primary" id="focusBtn">🔮 focus (transparent)</button>
-                <button id="resetBtn">↺ reset</button>
+                <div class="slider-group">
+                    <div class="slider-label">
+                        <span>⚡ spin speed & direction</span>
+                        <span id="speedDisplay" class="value-badge">1.0</span>
+                    </div>
+                    <input type="range" id="speedSlider" min="-3" max="3" value="1" step="0.1">
+                    <div class="direction-hint">
+                        <span>◀ counter‑clockwise</span>
+                        <span>stop</span>
+                        <span>clockwise ▶</span>
+                    </div>
+                </div>
             </div>
             <div class="focus-hint">
-                <span><kbd>N</kbd> toggle focus</span>
+                <span><kbd>N</kbd> toggle focus mode</span>
                 <span><kbd>ESC</kbd> exit</span>
-                <span>✨ transparent background</span>
             </div>
         </div>
 
-        <!-- CANVAS (curved text) -->
+        <!-- RING (right) – stays visible in focus mode -->
         <div class="ring-wrapper">
             <div class="ring-container">
-                <canvas id="ringCanvas" width="700" height="700"></canvas>
+                <svg viewBox="0 0 600 600" preserveAspectRatio="xMidYMid meet" id="spinningSvg">
+                    <path id="circlePath" 
+                          d="M 300,300 m -200, 0 a 200,200 0 1,1 400,0 a 200,200 0 1,1 -400,0" 
+                          fill="none" stroke="none" />
+                    <text id="outlineText" fill="none" stroke="#aa7eec" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" font-family="'Courier New', monospace" font-size="30" font-weight="bold" text-anchor="middle">
+                        <textPath href="#circlePath" startOffset="50%">The quick brown fox jumps over the lazy dog</textPath>
+                    </text>
+                    <text id="mainText" fill="#ffffff" font-family="'Courier New', monospace" font-size="30" font-weight="bold" text-anchor="middle">
+                        <textPath href="#circlePath" startOffset="50%">The quick brown fox jumps over the lazy dog</textPath>
+                    </text>
+                </svg>
             </div>
         </div>
     </div>
-    <div class="footer-note">continuous curve · spin control · transparent overlay ready</div>
+    <div class="footer-note">adjust radius & font size · outline toggle · press N for clean overlay</div>
 </div>
 
 <script>
     (function() {
-        const app = document.getElementById('app');
-        const canvas = document.getElementById('ringCanvas');
-        const ctx = canvas.getContext('2d');
-
-        // all inputs
+        // Elements
         const textInput = document.getElementById('textInput');
-        const fontSizeRange = document.getElementById('fontSize');
-        const fontSizeSpan = document.getElementById('fontSizeVal');
-        const fontFamilySelect = document.getElementById('fontFamily');
-        const textColorInput = document.getElementById('textColor');
-        const highlightColorInput = document.getElementById('highlightColor');
-        const opacitySlider = document.getElementById('opacitySlider');
-        const opacitySpan = document.getElementById('opacityVal');
+        const textPathMain = document.querySelector('#mainText textPath');
+        const textPathOutline = document.querySelector('#outlineText textPath');
+        const mainText = document.getElementById('mainText');
+        const outlineText = document.getElementById('outlineText');
+        const textColorPicker = document.getElementById('textColor');
+        const outlineColorPicker = document.getElementById('outlineColor');
+        const outlineToggle = document.getElementById('outlineToggle');
+        const circlePath = document.getElementById('circlePath');
+        const svg = document.getElementById('spinningSvg');
+
+        const radiusSlider = document.getElementById('radiusSlider');
+        const radiusDisplay = document.getElementById('radiusDisplay');
+        const fontSizeSlider = document.getElementById('fontSizeSlider');
+        const fontSizeDisplay = document.getElementById('fontSizeDisplay');
         const speedSlider = document.getElementById('speedSlider');
-        const speedSpan = document.getElementById('speedVal');
-        const angleSlider = document.getElementById('angleSlider');
-        const angleSpan = document.getElementById('angleVal');
-        const focusBtn = document.getElementById('focusBtn');
-        const resetBtn = document.getElementById('resetBtn');
+        const speedDisplay = document.getElementById('speedDisplay');
 
-        // state
-        let rotation = 0;
-        let lastTimestamp = 0;
+        let angle = 0;
+        let lastTimestamp = null;
+        let currentSpeed = 1.0;
 
-        // helpers
-        function updateLabels() {
-            fontSizeSpan.textContent = fontSizeRange.value;
-            opacitySpan.textContent = parseFloat(opacitySlider.value).toFixed(2);
-            speedSpan.textContent = speedSlider.value;
-            angleSpan.textContent = angleSlider.value + '°';
+        // Update path based on radius
+        function updatePath(radius) {
+            const centerX = 300, centerY = 300;
+            const d = `M ${centerX},${centerY} m -${radius},0 a ${radius},${radius} 0 1,1 ${2*radius},0 a ${radius},${radius} 0 1,1 -${2*radius},0`;
+            circlePath.setAttribute('d', d);
         }
 
-        // ----- draw curved text (connected, full circle) -----
-        function drawRing() {
-            const text = textInput.value || '⦿';
-            const fontSize = parseInt(fontSizeRange.value, 10);
-            const fontFamily = fontFamilySelect.value;
-            const textColor = textColorInput.value;
-            const bgColor = highlightColorInput.value;
-            const globalAlpha = parseFloat(opacitySlider.value);
-            const angleOffsetDeg = parseFloat(angleSlider.value);
-            const angleOffsetRad = (angleOffsetDeg * Math.PI) / 180;
-
-            // Clear to transparent (always, for overlay)
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.save();
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.rotate(rotation + angleOffsetRad);
-
-            const radius = canvas.width * 0.32;          // radius to text baseline
-            if (!text.length) {
-                ctx.restore();
-                return;
-            }
-
-            ctx.font = `${fontSize}px ${fontFamily}`;
-            ctx.textBaseline = 'middle';
-            ctx.textAlign = 'center';
-
-            const chars = text.split('');
-            const widths = chars.map(c => ctx.measureText(c).width);
-            const totalWidth = widths.reduce((a, b) => a + b, 0);
-
-            if (totalWidth === 0) {
-                ctx.restore();
-                return;
-            }
-
-            const totalAngle = 2 * Math.PI;   // full circle – text curves all around
-            let currentAngle = -totalAngle / 2; // start at leftmost point for symmetry
-
-            for (let i = 0; i < chars.length; i++) {
-                const char = chars[i];
-                const charWidth = widths[i];
-                const angleStep = (charWidth / totalWidth) * totalAngle;
-                const charAngle = currentAngle + angleStep / 2;
-
-                ctx.save();
-                ctx.rotate(charAngle);
-                ctx.translate(radius, 0);
-
-                // optional highlight (soft pill behind letter)
-                if (bgColor && globalAlpha > 0) {
-                    const metrics = ctx.measureText(char);
-                    const charHeight = fontSize * 1.2;
-                    const pillWidth = metrics.width + 12;
-                    const pillHeight = charHeight + 8;
-                    ctx.save();
-                    ctx.globalAlpha = globalAlpha * 0.45;
-                    ctx.fillStyle = bgColor;
-                    ctx.beginPath();
-                    ctx.ellipse(0, 0, pillWidth/2, pillHeight/2, 0, 0, 2 * Math.PI);
-                    ctx.fill();
-                    ctx.restore();
-                }
-
-                ctx.globalAlpha = globalAlpha;
-                ctx.fillStyle = textColor;
-                ctx.font = `${fontSize}px ${fontFamily}`;
-                ctx.fillText(char, 0, 0);
-
-                ctx.restore();
-
-                currentAngle += angleStep;
-            }
-
-            ctx.restore();
+        function updateText() {
+            let newText = textInput.value;
+            if (newText.trim() === '') newText = ' ';
+            textPathMain.textContent = newText;
+            textPathOutline.textContent = newText;
         }
 
-        // animation loop
-        function animate(time) {
-            if (!lastTimestamp) {
-                lastTimestamp = time;
-                requestAnimationFrame(animate);
-                return;
+        function updateTextColor() {
+            mainText.setAttribute('fill', textColorPicker.value);
+        }
+
+        function updateOutline() {
+            if (outlineToggle.checked) {
+                outlineText.setAttribute('stroke', outlineColorPicker.value);
+            } else {
+                outlineText.setAttribute('stroke', 'none');
             }
-            const delta = Math.min(100, time - lastTimestamp);
-            const speedValue = parseFloat(speedSlider.value);
-            const rotationDelta = speedValue * delta * 0.00157; // 2pi rad per ~4 sec at speed=1
-            rotation += rotationDelta;
-
-            lastTimestamp = time;
-            drawRing();
-            requestAnimationFrame(animate);
-        }
-        requestAnimationFrame(animate);
-
-        // redraw on input changes
-        function refresh() {
-            updateLabels();
-            drawRing();
         }
 
-        textInput.addEventListener('input', refresh);
-        fontSizeRange.addEventListener('input', refresh);
-        fontFamilySelect.addEventListener('change', refresh);
-        textColorInput.addEventListener('input', refresh);
-        highlightColorInput.addEventListener('input', refresh);
-        opacitySlider.addEventListener('input', refresh);
-        speedSlider.addEventListener('input', () => {
-            speedSpan.textContent = speedSlider.value;
-            drawRing();
-        });
-        angleSlider.addEventListener('input', () => {
-            angleSpan.textContent = angleSlider.value + '°';
-            drawRing();
-        });
+        function updateFontSize() {
+            const size = fontSizeSlider.value;
+            fontSizeDisplay.textContent = size;
+            mainText.setAttribute('font-size', size);
+            outlineText.setAttribute('font-size', size);
+        }
 
-        // reset defaults
-        resetBtn.addEventListener('click', () => {
-            textInput.value = '✦ CURVED AND SPINNING ✦';
-            fontSizeRange.value = 42;
-            fontFamilySelect.value = "Inter, 'Segoe UI', system-ui, sans-serif";
-            textColorInput.value = "#f0f0ff";
-            highlightColorInput.value = "#aa7eec";
-            opacitySlider.value = "1";
-            speedSlider.value = "1.2";
-            angleSlider.value = "0";
-            updateLabels();
-            drawRing();
-        });
+        function updateRadius() {
+            const radius = radiusSlider.value;
+            radiusDisplay.textContent = radius;
+            updatePath(radius);
+        }
 
-        // FOCUS MODE — transparent overlay
+        function updateSpeed() {
+            currentSpeed = parseFloat(speedSlider.value);
+            speedDisplay.textContent = currentSpeed.toFixed(1);
+        }
+
+        // Event listeners
+        textInput.addEventListener('input', updateText);
+        textColorPicker.addEventListener('input', updateTextColor);
+        outlineColorPicker.addEventListener('input', updateOutline);
+        outlineToggle.addEventListener('change', updateOutline);
+        radiusSlider.addEventListener('input', updateRadius);
+        fontSizeSlider.addEventListener('input', updateFontSize);
+        speedSlider.addEventListener('input', updateSpeed);
+
+        // Initial updates
+        updateText();
+        updateTextColor();
+        updateOutline();
+        updateRadius();
+        updateFontSize();
+        updateSpeed();
+
+        // Animation loop
+        function rotate(timestamp) {
+            if (lastTimestamp !== null) {
+                const delta = Math.min(100, timestamp - lastTimestamp);
+                // at speed=1, full rotation in 10s => 0.036 deg/ms
+                const rotationDelta = currentSpeed * delta * 0.036;
+                angle += rotationDelta;
+                svg.style.transform = `rotate(${angle}deg)`;
+            }
+            lastTimestamp = timestamp;
+            requestAnimationFrame(rotate);
+        }
+        requestAnimationFrame(rotate);
+
+        // ----- FOCUS MODE (N key) -----
         function toggleFocus() {
-            app.classList.toggle('focus-mode');
+            document.body.classList.toggle('focus-mode');
         }
         function exitFocus() {
-            app.classList.remove('focus-mode');
+            document.body.classList.remove('focus-mode');
         }
 
-        focusBtn.addEventListener('click', toggleFocus);
-
-        // Hotkeys: N toggles focus, ESC exits focus
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                exitFocus();
-            } else if (e.key === 'n' || e.key === 'N') {
-                e.preventDefault();  // avoid accidental browser search
+            if (e.key === 'n' || e.key === 'N') {
+                e.preventDefault(); // avoid browser search
                 toggleFocus();
+            } else if (e.key === 'Escape') {
+                exitFocus();
             }
         });
-
-        // initial draw
-        updateLabels();
-        drawRing();
-
-        // ensure canvas stays sharp on resize
-        window.addEventListener('resize', () => drawRing());
     })();
 </script>
 </body>
