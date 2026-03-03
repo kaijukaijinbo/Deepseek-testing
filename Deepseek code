@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>rotating text ring · focusable control</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: #1e1e2f;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            transition: background 0.2s;
+        }
+
+        /* main container: two columns (controls + preview) */
+        .app {
+            width: 1300px;
+            max-width: 95vw;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(8px);
+            border-radius: 3rem 2rem 2rem 3rem;
+            box-shadow: 0 25px 50px -8px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+            padding: 2rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        /* focus mode: only ring visible, fullscreen feel */
+        .app.focus-mode {
+            background: transparent;
+            backdrop-filter: none;
+            box-shadow: none;
+            width: 100vw;
+            max-width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            border-radius: 0;
+        }
+
+        .app.focus-mode .control-panel {
+            display: none;
+        }
+
+        .app.focus-mode .ring-wrapper {
+            width: 100%;
+            height: 100%;
+            transform: scale(1.1); /* a bit bigger in focus */
+        }
+
+        .app.focus-mode body {
+            background: #000;
+        }
+
+        /* two column layout */
+        .dashboard {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* left side — text controls (card style) */
+        .control-panel {
+            flex: 1 1 340px;
+            background: rgba(30, 30, 46, 0.7);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 1.8rem 1.5rem;
+            color: #f0eef7;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 15px 30px -12px black;
+            transition: opacity 0.2s;
+            height: fit-content;
+        }
+
+        .control-panel h2 {
+            font-weight: 400;
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+            margin-top: 0;
+            margin-bottom: 1.8rem;
+            border-bottom: 1px dashed #5f5c7a;
+            padding-bottom: 0.6rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-panel h2 i {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .control-group {
+            margin-bottom: 1.6rem;
+        }
+
+        .control-group label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #b9c2da;
+            margin-bottom: 0.5rem;
+        }
+
+        .control-group label span:first-child {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        input, select {
+            background: #262439;
+            border: 1px solid #444267;
+            border-radius: 2rem;
+            padding: 0.6rem 1.2rem;
+            color: white;
+            font-size: 0.95rem;
+            width: 100%;
+            outline: none;
+            transition: 0.15s;
+        }
+
+        input[type="range"] {
+            padding: 0;
+            background: transparent;
+            accent-color: #a88beb;
+        }
+
+        input[type="color"] {
+            height: 3rem;
+            padding: 0.2rem;
+            cursor: pointer;
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a88beb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1rem;
+        }
+
+        .inline-slider {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .inline-slider input {
+            flex: 1;
+        }
+
+        .inline-slider output {
+            min-width: 3.5rem;
+            text-align: right;
+            font-feature-settings: "tnum";
+            background: #1f1d2e;
+            padding: 0.3rem 0.5rem;
+            border-radius: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            margin: 2rem 0 0.5rem;
+        }
+
+        button {
+            background: #332f4a;
+            border: none;
+            border-radius: 2.5rem;
+            padding: 0.8rem 1.5rem;
+            font-weight: 500;
+            color: #f2eefd;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.15s;
+            flex: 1 0 auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        button:hover {
+            background: #4b4570;
+            border-color: #ab94e9;
+            transform: scale(1.02);
+        }
+
+        button.primary {
+            background: #6d5f9e;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 6px 12px #3d3559;
+        }
+
+        button.primary:hover {
+            background: #8877c4;
+        }
+
+        /* right side – ring canvas */
+        .ring-wrapper {
+            flex: 1 1 460px;
+            min-width: 340px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 2.5rem;
+            padding: 1rem;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .ring-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            max-width: 480px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 50%;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.05);
+            background: #181626; /* fallback, but we clear canvas each frame */
+            transition: box-shadow 0.2s;
+        }
+
+        .focus-hint {
+            margin-top: 1rem;
+            text-align: center;
+            color: #9590b3;
+            font-size: 0.8rem;
+            display: flex;
+            gap: 0.8rem;
+            justify-content: center;
+        }
+
+        .focus-mode .focus-hint {
+            display: none;
+        }
+
+        kbd {
+            background: #2b283b;
+            border-radius: 0.4rem;
+            padding: 0.2rem 0.7rem;
+            font-family: monospace;
+            border: 1px solid #5f5a80;
+        }
+
+        .footer-note {
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 2rem;
+            color: #6f6b92;
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <div class="dashboard">
+        <!-- CONTROL PANEL (left) -->
+        <div class="control-panel" id="controlPanel">
+            <h2>
+                <span>⌨️ text ring studio</span>
+            </h2>
+
+            <!-- text input -->
+            <div class="control-group">
+                <label><span>📝 ring text</span></label>
+                <input type="text" id="textInput" value="★ ROTATING RING ★" placeholder="your text here...">
+            </div>
+
+            <!-- font size -->
+            <div class="control-group">
+                <label><span>🔠 font size</span> <span id="fontSizeVal">36</span></label>
+                <div class="inline-slider">
+                    <input type="range" id="fontSize" min="12" max="90" value="36" step="1">
+                </div>
+            </div>
+
+            <!-- font family -->
+            <div class="control-group">
+                <label><span>✒️ typeface</span></label>
+                <select id="fontFamily">
+                    <option value="Inter, system-ui, sans-serif" selected>Inter (sans)</option>
+                    <option value="'Times New Roman', serif">Times New Roman</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="'Arial Black', sans-serif">Arial Black</option>
+                    <option value="Georgia, serif">Georgia</option>
+                    <option value="'Comic Sans MS', cursive">Comic Sans</option>
+                </select>
+            </div>
+
+            <!-- font color + highlight (background) -->
+            <div class="control-group" style="display: flex; gap: 1rem;">
+                <div style="flex:1">
+                    <label><span>🎨 color</span></label>
+                    <input type="color" id="textColor" value="#ffffff">
+                </div>
+                <div style="flex:1">
+                    <label><span>🟨 highlight</span></label>
+                    <input type="color" id="highlightColor" value="#aa7eec">
+                </div>
+            </div>
+
+            <!-- opacity (global alpha) -->
+            <div class="control-group">
+                <label><span>🌀 opacity</span> <span id="opacityVal">1.00</span></label>
+                <input type="range" id="opacitySlider" min="0.1" max="1" step="0.01" value="1">
+            </div>
+
+            <!-- rotation speed & angle -->
+            <div class="control-group">
+                <label><span>⚡ rotation speed</span> <span id="speedVal">1.0</span></label>
+                <input type="range" id="speedSlider" min="-3" max="3" value="1" step="0.1">
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; opacity:0.7;">
+                    <span>← reverse</span><span>stop</span><span>fast →</span>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label><span>📐 angle offset</span> <span id="angleVal">0°</span></label>
+                <input type="range" id="angleSlider" min="0" max="360" value="0" step="1">
+            </div>
+
+            <!-- action buttons -->
+            <div class="button-row">
+                <button class="primary" id="focusBtn">🔮 focus mode</button>
+                <button id="resetBtn">↺ reset defaults</button>
+            </div>
+            <div class="focus-hint">
+                <span><kbd>ESC</kbd> exit focus</span>
+                <span>⚫ ring only</span>
+            </div>
+        </div>
+
+        <!-- RING PREVIEW (right) -->
+        <div class="ring-wrapper">
+            <div class="ring-container">
+                <canvas id="ringCanvas" width="600" height="600"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="footer-note">⭕ text arcs around a circle · all controls live</div>
+</div>
+
+<script>
+    (function() {
+        // ----- DOM elements -----
+        const app = document.getElementById('app');
+        const canvas = document.getElementById('ringCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Inputs
+        const textInput = document.getElementById('textInput');
+        const fontSizeRange = document.getElementById('fontSize');
+        const fontSizeSpan = document.getElementById('fontSizeVal');
+        const fontFamilySelect = document.getElementById('fontFamily');
+        const textColorInput = document.getElementById('textColor');
+        const highlightColorInput = document.getElementById('highlightColor');
+        const opacitySlider = document.getElementById('opacitySlider');
+        const opacitySpan = document.getElementById('opacityVal');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedSpan = document.getElementById('speedVal');
+        const angleSlider = document.getElementById('angleSlider');
+        const angleSpan = document.getElementById('angleVal');
+        const focusBtn = document.getElementById('focusBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // ---- state ----
+        let rotation = 0;            // current rotation angle (radians)
+        let lastTimestamp = 0;
+        let speed = 1.0;             // from slider
+        let baseAngle = 0;            // angle offset (degrees), converted to radians
+
+        // ---- helper to update UI spans ----
+        function updateLabels() {
+            fontSizeSpan.textContent = fontSizeRange.value;
+            opacitySpan.textContent = parseFloat(opacitySlider.value).toFixed(2);
+            speedSpan.textContent = speedSlider.value;
+            angleSpan.textContent = angleSlider.value + '°';
+        }
+
+        // ---- draw the ring ----
+        function drawRing() {
+            const text = textInput.value || '⚡';
+            const fontSize = parseInt(fontSizeRange.value, 10);
+            const fontFamily = fontFamilySelect.value;
+            const textColor = textColorInput.value;
+            const bgColor = highlightColorInput.value;   // used as fill for text background? we'll do "highlight" as a background under each letter?
+            const globalAlpha = parseFloat(opacitySlider.value);
+            const angleOffsetDeg = parseFloat(angleSlider.value);  // user offset
+            const angleOffsetRad = (angleOffsetDeg * Math.PI) / 180;
+
+            // Prepare canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+
+            // Apply current rotation (from animation) + angle offset
+            ctx.rotate(rotation + angleOffsetRad);
+
+            // Text metrics
+            ctx.font = `${fontSize}px ${fontFamily}`;
+            ctx.textBaseline = 'middle';
+            ctx.textAlign = 'center';
+
+            // letter spacing / radius based on font size
+            const radius = canvas.width * 0.35;  // 35% of canvas
+
+            // If empty text, nothing to draw
+            if (!text) {
+                ctx.restore();
+                return;
+            }
+
+            const letters = text.split('');
+            const totalChars = letters.length;
+            if (totalChars === 0) {
+                ctx.restore();
+                return;
+            }
+
+            // Estimate angle per character using measureText (approximate, but nice)
+            // We'll accumulate width, but simpler: use fixed angle increment based on average width
+            // but for consistent circle we want each character to take roughly same arc.
+            // Better: use fixed angle step so the circle is always full.
+            const angleStep = (2 * Math.PI) / totalChars;
+
+            for (let i = 0; i < totalChars; i++) {
+                const char = letters[i];
+                // Position each character at angle i * angleStep
+                const charAngle = i * angleStep;
+
+                // Save context for each character to apply rotation individually
+                ctx.save();
+                ctx.rotate(charAngle);
+                // move from center outward along X axis (which is rotated)
+                ctx.translate(radius, 0);
+
+                // optional highlight: draw a rounded rect behind text
+                if (bgColor && globalAlpha > 0) {
+                    const metrics = ctx.measureText(char);
+                    const charWidth = metrics.width;
+                    const charHeight = fontSize * 1.2; // approximate height
+                    ctx.save();
+                    ctx.globalAlpha = globalAlpha * 0.5; // highlight alpha separate? but use same global for both
+                    ctx.fillStyle = bgColor;
+                    // draw a pill shape behind the letter
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, charWidth/2 + 6, charHeight/2 + 4, 0, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.restore();
+                }
+
+                // draw the character
+                ctx.globalAlpha = globalAlpha;
+                ctx.fillStyle = textColor;
+                ctx.font = `${fontSize}px ${fontFamily}`;
+                ctx.fillText(char, 0, 0);
+
+                ctx.restore(); // back to center + rotation
+            }
+
+            ctx.restore(); // restore total transform
+        }
+
+        // ---- animation loop ----
+        function animate(time) {
+            if (!lastTimestamp) {
+                lastTimestamp = time;
+                requestAnimationFrame(animate);
+                return;
+            }
+
+            const delta = Math.min(100, time - lastTimestamp); // ms
+            const speedValue = parseFloat(speedSlider.value);
+            // convert speed: full circle per 4 seconds when speed=1 => base rotation speed factor
+            const rotationDelta = (speedValue * delta * 0.0015); // rad per ms (tweaked for nice feel)
+            rotation += rotationDelta;
+
+            lastTimestamp = time;
+            drawRing();
+            requestAnimationFrame(animate);
+        }
+
+        // start animation
+        requestAnimationFrame(animate);
+
+        // ---- event listeners for UI updates (re-draw) ----
+        function refreshFromInputs() {
+            updateLabels();
+            drawRing(); // immediate update without changing rotation (but draw uses current rotation)
+        }
+
+        textInput.addEventListener('input', refreshFromInputs);
+        fontSizeRange.addEventListener('input', refreshFromInputs);
+        fontFamilySelect.addEventListener('change', refreshFromInputs);
+        textColorInput.addEventListener('input', refreshFromInputs);
+        highlightColorInput.addEventListener('input', refreshFromInputs);
+        opacitySlider.addEventListener('input', refreshFromInputs);
+        speedSlider.addEventListener('input', () => {
+            speedSpan.textContent = speedSlider.value;
+            // no redraw needed? but we keep it for speed feedback
+            drawRing(); // live redraw (rotation updated in animate)
+        });
+        angleSlider.addEventListener('input', () => {
+            angleSpan.textContent = angleSlider.value + '°';
+            drawRing(); // offset changed → immediate redraw
+        });
+
+        // reset to defaults
+        resetBtn.addEventListener('click', () => {
+            textInput.value = '★ ROTATING RING ★';
+            fontSizeRange.value = 36;
+            fontFamilySelect.value = "Inter, system-ui, sans-serif";
+            textColorInput.value = "#ffffff";
+            highlightColorInput.value = "#aa7eec";
+            opacitySlider.value = "1";
+            speedSlider.value = "1";
+            angleSlider.value = "0";
+            updateLabels();
+            drawRing();
+        });
+
+        // ---- FOCUS MODODE ----
+        function enterFocusMode() {
+            app.classList.add('focus-mode');
+        }
+        function exitFocusMode() {
+            app.classList.remove('focus-mode');
+        }
+
+        focusBtn.addEventListener('click', enterFocusMode);
+
+        // ESC key exits focus mode
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                exitFocusMode();
+            }
+        });
+
+        // optional: click on canvas does not exit, only ESC
+
+        // initial update
+        updateLabels();
+        drawRing();
+
+        // guarantee canvas size adaption if needed (but fixed 600x600)
+        // if you want high-res, fine.
+
+        // handle window resize? keep canvas ratio (but canvas is fixed size)
+        // for responsiveness, canvas is sized via CSS; we keep drawing 600x600 sharp.
+        // redraw on resize just in case (though no scaling needed)
+        window.addEventListener('resize', () => drawRing());
+
+        // additional: ensure slider values update draw when speed changes (animation loop picks it)
+        // but angle offset must redraw manually; we already do in angleSlider input.
+        // For speed, it's continuous in animation, but if you want to see effect of speed while stopped? it's always moving.
+    })();
+</script>
+</body>
+</html>
